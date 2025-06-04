@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Task Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin-bottom: 20px; }
+    form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: 250px;
+    }
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .task {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      width: 320px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .task span {
+      flex: 1;
+    }
+    .task button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Task Manager</h1>
+  <form id="taskForm">
+    <input type="text" id="taskInput" placeholder="Enter new task" required />
+    <button type="submit">Add</button>
+  </form>
+  <div id="taskList"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDh-A6jMKT9MZgqgB1deniB90B0TeYwabc",
+      authDomain: "fir-crud-b47f3.firebaseapp.com",
+      projectId: "fir-crud-b47f3",
+      storageBucket: "fir-crud-b47f3.firebasestorage.app",
+      messagingSenderId: "915308272494",
+      appId: "1:915308272494:web:b58a56864719eef0ac3f7f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const taskForm = document.getElementById('taskForm');
+    const taskInput = document.getElementById('taskInput');
+    const taskList = document.getElementById('taskList');
+    const taskCol = collection(db, "tasks");
+
+    async function renderTasks() {
+      taskList.innerHTML = '';
+      const snapshot = await getDocs(taskCol);
+      snapshot.forEach(docSnap => {
+        const task = docSnap.data();
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `
+          <span>${task.name}</span>
+          <button onclick="editTask('${docSnap.id}', '${task.name}')">Edit</button>
+          <button onclick="deleteTask('${docSnap.id}')">Delete</button>
+        `;
+        taskList.appendChild(div);
+      });
+    }
+
+    taskForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const taskName = taskInput.value.trim();
+      if (taskName) {
+        await addDoc(taskCol, { name: taskName });
+        taskInput.value = '';
+        renderTasks();
+      }
+    });
+
+    window.deleteTask = async (id) => {
+      await deleteDoc(doc(taskCol, id));
+      renderTasks();
+    };
+
+    window.editTask = async (id, oldName) => {
+      const newName = prompt("Edit task name:", oldName);
+      if (newName && newName !== oldName) {
+        await updateDoc(doc(taskCol, id), { name: newName });
+        renderTasks();
+      }
+    };
+
+    renderTasks();
+  </script>
+</body>
+</html>
